@@ -51,77 +51,77 @@
 //     return "Hello, " + name;
 // }
 
+#include <bits/stdc++.h>
 
-int solution(String[] crypt) {
-        int[] dgtUsd = new int[10]; 
-        Map<Character, Integer> chToDgt = new HashMap<>();
-        Set<Character> UnqLtr = new HashSet<>();
-        final int[] vldCnt = {0}; 
+using namespace std;
 
-        
-        for (String word : crypt) {
-            for (char letter : word.toCharArray()) {
-                UnqLtr.add(letter);
+int solution(vector<string> crypt) {
+    unordered_map<char, int> c2i;
+    unordered_map<int, char> i2c;
+    int ans = 0;
+    int limit = crypt[2].length(); 
+    for (auto& w : crypt)
+        if (w.length() > limit) return 0; 
+    for (auto& w : crypt)
+        reverse(w.begin(), w.end()); 
+    function<bool(int, int, int)> helper = [&](int digit, int widx, int sum) {
+        if (digit == limit) {
+            ans += (sum == 0);
+            return sum == 0;
+        }
+
+        if (widx == 2) { 
+            if (!c2i.count(crypt[2][digit]) && !i2c.count(sum % 10)) {
+                if (sum % 10 == 0 && digit + 1 == limit) return false;
+                c2i[crypt[2][digit]] = sum % 10;
+                i2c[sum % 10] = crypt[2][digit];
+
+                bool tmp = helper(digit + 1, 0, sum / 10);
+
+                c2i.erase(crypt[2][digit]);
+                i2c.erase(sum % 10);
+                return tmp;
+            } else if (c2i.count(crypt[2][digit]) && c2i[crypt[2][digit]] == sum % 10) {
+                if (digit + 1 == limit && c2i[crypt[2][digit]] == 0) return false; 
+                return helper(digit + 1, 0, sum / 10);
+            } else {
+                return false;
             }
         }
 
-
-        if (UnqLtr.size() > 10) {
-            return 0;
+        if (digit >= crypt[widx].length()) {
+            return helper(digit, widx + 1, sum);
         }
 
-        List<Character> UnqLtrLst = new ArrayList<>(UnqLtr);
-        solve(UnqLtrLst, 0, chToDgt, dgtUsd, crypt, vldCnt);
-        return vldCnt[0];
-    }
-
-     void solve(List<Character> UnqLtr, int idx,
-                       Map<Character, Integer> chToDgt, int[] dgtUsd,
-                       String[] crypt, int[] vldCnt) {
-        if (idx == UnqLtr.size()) {
-         
-            if (!isVldAsgn(chToDgt, crypt)) {
-                return;
-            }
-
-            
-            long num1 = getNumberFromWord(crypt[0], chToDgt);
-            long num2 = getNumberFromWord(crypt[1], chToDgt);
-            long num3 = getNumberFromWord(crypt[2], chToDgt);
-
-            
-            if (num1 + num2 == num3) {
-                vldCnt[0]++;
-            }
-            return;
+        if (c2i.count(crypt[widx][digit])) {
+            if (digit + 1 == crypt[widx].length() && crypt[widx].length() > 1 && c2i[crypt[widx][digit]] == 0)
+                return false; 
+            return helper(digit, widx + 1, sum + c2i[crypt[widx][digit]]);
         }
-
-        char currentLetter = UnqLtr.get(idx);
 
         for (int i = 0; i < 10; i++) {
-            if (dgtUsd[i] == 0) {
-                dgtUsd[i] = 1;
-                chToDgt.put(currentLetter, i);
-                solve(UnqLtr, idx + 1, chToDgt, dgtUsd, crypt, vldCnt);
-                dgtUsd[i] = 0;
-                chToDgt.remove(currentLetter);
-            }
-        }
-    }
+            if (digit + 1 == crypt[widx].length() && i == 0 && crypt[widx].length() > 1) continue; 
+            if (i2c.count(i)) continue;
 
-     boolean isVldAsgn(Map<Character, Integer> chToDgt, String[] crypt) {
-        for (String word : crypt) {
-            if (word.length() > 1 && chToDgt.get(word.charAt(0)) == 0) {
-                return false; 
-            }
-        }
-        return true;
-    }
+            c2i[crypt[widx][digit]] = i;
+            i2c[i] = crypt[widx][digit];
 
-     long getNumberFromWord(String word, Map<Character, Integer> chToDgt) {
-        long number = 0;
-        for (char c : word.toCharArray()) {
-            number = number * 10 + chToDgt.get(c);
+            bool tmp = helper(digit, widx + 1, sum + i);
+
+            c2i.erase(crypt[widx][digit]);
+            i2c.erase(i);
         }
-        return number;
-    }
+
+        return false;
+    };
+
+    helper(0, 0, 0);
+
+    return ans;
+}
+
+int main() {
+    vector<string> crypt = {"AABC", "DE", "FCCEE"}; 
+    cout << solution(crypt) << "\n";
+    return 0;
+}
